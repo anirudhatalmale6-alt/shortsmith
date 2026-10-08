@@ -23,7 +23,7 @@ from typing import Callable, Sequence
 
 from ..config import settings
 from ..providers import captions as cap
-from ..providers import images, tts
+from ..providers import images, styles, tts
 from ..providers.script_types import ScriptResult
 
 log = logging.getLogger(__name__)
@@ -55,6 +55,8 @@ class RenderOptions:
     words_per_line: int = 3
     uppercase_captions: bool = True
     image_provider: str = ""
+    visual_style: str = "cinematic"   # see providers/styles.STYLE_PRESETS
+    look_lock: bool = True            # one seed family + one character sheet
     music: str = ""              # filename inside assets/music, or "" for none
     music_gain_db: float = -22.0
     motion: bool = True
@@ -278,6 +280,26 @@ def render_short(
 
     # --- 2. visuals -----------------------------------------------------
     step(f"Generating {len(units)} visuals", 25)
+
+    # Lock the look before the first call: one seed family, one style suffix and
+    # one character description across every beat.  Six independent generations
+    # do not read as one film, and that is the single most common reason an
+    # AI Short looks cheap.
+    sheet = ""
+    if options.look_lock:
+        sheet = styles.character_sheet([u.visual_prompt for u in units])
+        images.set_look(
+            seed_base=styles.seed_base(script.title or script.hook),
+            negative=styles.style_negative(options.visual_style),
+        )
+        for unit in units:
+            unit.visual_prompt = styles.apply_look(
+                unit.visual_prompt, options.visual_style, sheet
+            )
+    else:
+        images.set_look(0, styles.style_negative(options.visual_style))
+    used["style"] = options.visual_style + (" (locked)" if options.look_lock else "")
+
     cache: dict[str, Path] = {}
     providers_used: set[str] = set()
     for index, unit in enumerate(units):

@@ -32,6 +32,7 @@ from .models import (
 from .providers import captions as cap
 from .providers import images as image_provider
 from .providers import llm as llm_provider
+from .providers import styles as style_presets
 from .providers import tts as tts_provider
 from .youtube import client as yt
 
@@ -229,6 +230,7 @@ def create_form(request: Request):
         channels=channels,
         voices=tts_provider.available_voices(),
         caption_styles=cap.STYLES,
+        style_presets=style_presets.STYLE_PRESETS,
         tones=TONES,
         music_files=music,
         timezones=COMMON_TIMEZONES,
@@ -252,6 +254,8 @@ def create(
     words_per_line: int = Form(3),
     uppercase_captions: str = Form(""),
     image_provider_name: str = Form(""),
+    visual_style: str = Form("cinematic"),
+    look_lock: str = Form("on"),
     music: str = Form(""),
     motion: str = Form("on"),
     made_for_kids: str = Form(""),
@@ -280,6 +284,8 @@ def create(
         "words_per_line": max(1, min(6, words_per_line)),
         "uppercase_captions": bool(uppercase_captions),
         "image_provider": image_provider_name,
+        "visual_style": visual_style,
+        "look_lock": bool(look_lock),
         "music": music,
         "motion": bool(motion),
     }

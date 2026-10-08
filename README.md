@@ -154,12 +154,18 @@ The ordering is the part that matters:
 3. **Captions from the audio, not the script.** Whisper transcribes the narration
    that was actually rendered and returns word timings. Piper expands "3am" and
    "Dr." its own way; only the audio knows where each word landed.
-4. **ASS, not SRT.** Per-word highlighting, a scale pop and a thick outline are
+4. **One look across the whole story.** Diffusion models have no memory between
+   calls, so consistency is forced from the outside: one seed family per video
+   (base + beat index), the same style suffix on every beat word for word, and a
+   character sheet lifted from the establishing beat and repeated in every prompt
+   that has a person in it. Art direction is a dropdown: cinematic, photoreal,
+   painterly, anime, noir, dark fantasy.
+5. **ASS, not SRT.** Per-word highlighting, a scale pop and a thick outline are
    the look that performs on Shorts, and SRT cannot express any of it.
-5. **Ken Burns with linear expressions.** `zoompan` is fed `1+k*on/N` rather than
+6. **Ken Burns with linear expressions.** `zoompan` is fed `1+k*on/N` rather than
    the usual `zoom+0.0005`; the incremental form accumulates rounding error and
    visibly stutters on long holds.
-6. **Ducked music.** `sidechaincompress` keyed off a copy of the voice, then a
+7. **Ducked music.** `sidechaincompress` keyed off a copy of the voice, then a
    limiter, then `loudnorm` to -15 LUFS.
 
 ## How clipping picks its moments

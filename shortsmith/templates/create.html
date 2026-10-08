@@ -171,6 +171,22 @@
         </select>
       </div>
       <div class="field">
+        <label for="visual_style">Art direction</label>
+        <select id="visual_style" name="visual_style">
+          {% for key, spec in style_presets.items() %}
+            <option value="{{ key }}" {{ 'selected' if key == 'cinematic' }}>{{ spec[0] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field inline">
+        <input type="checkbox" id="look_lock" name="look_lock" checked>
+        <label for="look_lock">Lock the look across the whole story</label>
+      </div>
+      <div class="hint" style="margin:-8px 0 16px">One seed family, one style
+        suffix and one character description on every beat, so the shots read as
+        one film instead of six unrelated pictures.</div>
+
+      <div class="field">
         <label for="music">Music bed</label>
         <select id="music" name="music">
           <option value="">No music</option>

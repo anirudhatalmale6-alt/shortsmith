@@ -71,7 +71,24 @@ def _fit_vertical(img: Image.Image, trim_bottom: int = 0) -> Image.Image:
     return img.crop((left, top, left + tw, top + th))
 
 
+# One seed base per video, offset by beat index.  Without this every still is
+# an independent roll of the dice and the six beats do not look like one film.
+_seed_base = 0
+_negative = NEGATIVE
+
+
+def set_look(seed_base: int = 0, negative: str = "") -> None:
+    """Called once per render to lock the seed family and the negative prompt."""
+    global _seed_base, _negative
+    _seed_base = int(seed_base)
+    _negative = negative or NEGATIVE
+
+
 def _seed_for(prompt: str, index: int) -> int:
+    if _seed_base:
+        # Deterministic, close together, and stable across re-renders of the
+        # same video: the model lands in the same region of latent space.
+        return (_seed_base + index * 101) % (2 ** 31)
     digest = hashlib.sha256(f"{prompt}|{index}".encode()).hexdigest()
     return int(digest[:8], 16)
 
@@ -161,7 +178,7 @@ def _sdwebui(prompt: str, out_path: Path, index: int) -> Path:
 
     payload = {
         "prompt": prompt,
-        "negative_prompt": NEGATIVE,
+        "negative_prompt": _negative,
         "width": 768,
         "height": 1344,
         "steps": 28,
@@ -202,7 +219,7 @@ def _comfyui(prompt: str, out_path: Path, index: int) -> Path:
         "5": {"class_type": "EmptyLatentImage",
               "inputs": {"width": 768, "height": 1344, "batch_size": 1}},
         "6": {"class_type": "CLIPTextEncode", "inputs": {"text": prompt, "clip": ["4", 1]}},
-        "7": {"class_type": "CLIPTextEncode", "inputs": {"text": NEGATIVE, "clip": ["4", 1]}},
+        "7": {"class_type": "CLIPTextEncode", "inputs": {"text": _negative, "clip": ["4", 1]}},
         "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
         "9": {"class_type": "SaveImage", "inputs": {"filename_prefix": "shortsmith", "images": ["8", 0]}},
     }

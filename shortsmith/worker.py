@@ -99,6 +99,8 @@ def _options_from(job: Job) -> RenderOptions:
         words_per_line=int(opts.get("words_per_line", 3)),
         uppercase_captions=bool(opts.get("uppercase_captions", True)),
         image_provider=opts.get("image_provider", ""),
+        visual_style=opts.get("visual_style", "cinematic"),
+        look_lock=bool(opts.get("look_lock", True)),
         music=opts.get("music", ""),
         motion=bool(opts.get("motion", True)),
     )
