@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Clip a video · Shortsmith{% endblock %}
+{% block content %}
+
+<h1>Turn a long video into Shorts</h1>
+<p class="sub">Paste a URL. It downloads the video, transcribes it, scores every
+sentence-aligned window for how well it stands alone, and cuts the best ones to 9:16
+with captions burned in.</p>
+
+<form method="post" action="/clip">
+<div class="grid2">
+  <div class="card">
+    <div class="field">
+      <label for="source_url">Video URL</label>
+      <input type="url" id="source_url" name="source_url" required
+             placeholder="https://www.youtube.com/watch?v=...">
+      <div class="hint">YouTube, Vimeo, Twitch VODs, direct MP4 links and anything
+        else yt-dlp supports.</div>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label for="clip_count">How many Shorts</label>
+        <input type="number" id="clip_count" name="clip_count" value="3" min="1" max="10">
+      </div>
+      <div class="field">
+        <label for="clip_length">Target length</label>
+        <select id="clip_length" name="clip_length">
+          <option value="25">About 25 seconds</option>
+          <option value="40" selected>About 40 seconds</option>
+          <option value="55">About 55 seconds</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="channel_id">Channel</label>
+      <select id="channel_id" name="channel_id">
+        <option value="">Do not publish, just cut them</option>
+        {% for channel in channels %}
+          <option value="{{ channel.id }}">{{ channel.title }}</option>
+        {% endfor %}
+      </select>
+      <div class="hint">Clips always land as drafts first so you can read the titles
+        before anything goes live.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Framing</h3>
+    <div class="field">
+      <label for="reframe">16:9 to 9:16</label>
+      <select id="reframe" name="reframe">
+        <option value="blur" selected>Keep the whole frame, blurred fill above and below</option>
+        <option value="crop">Fill the screen, crop the sides</option>
+      </select>
+      <div class="hint">Blurred fill never loses anything on screen. Centre crop looks
+        better for a talking head but cuts the edges off a wide shot.</div>
+    </div>
+
+    <div class="field">
+      <label for="caption_style">Captions</label>
+      <select id="caption_style" name="caption_style">
+        {% for key, spec in caption_styles.items() %}
+          <option value="{{ key }}" {{ 'selected' if key == 'bold_yellow' }}>{{ spec.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label for="words_per_line">Words per line</label>
+        <input type="number" id="words_per_line" name="words_per_line" value="3" min="1" max="6">
+      </div>
+      <div class="field">
+        <label for="privacy">Visibility</label>
+        <select id="privacy" name="privacy">
+          <option value="public">Public</option>
+          <option value="unlisted" selected>Unlisted</option>
+          <option value="private">Private</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="actions" style="margin-top:20px">
+  <button class="btn" type="submit">Cut it up</button>
+  <a class="btn ghost" href="/">Cancel</a>
+</div>
+</form>
+
+<div class="card" style="margin-top:22px">
+  <h3>Only upload what you have the rights to</h3>
+  <p class="hint" style="margin:0">Clipping someone else's video and posting it as your
+    own is a copyright strike waiting to happen. Use this on your own long-form uploads,
+    on footage you have licensed, or on public domain material.</p>
+</div>
+{% endblock %}

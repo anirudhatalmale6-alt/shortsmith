@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Queue · Shortsmith{% endblock %}
+{% block content %}
+
+<h1>Queue</h1>
+<p class="sub">Everything rendering, waiting for its slot, or already live.</p>
+
+<div class="grid4">
+  <div class="stat"><b>{{ counts.queued }}</b><span>Queued</span></div>
+  <div class="stat"><b>{{ counts.ready }}</b><span>Ready</span></div>
+  <div class="stat"><b>{{ counts.published }}</b><span>Published</span></div>
+  <div class="stat"><b>{{ counts.failed }}</b><span>Failed</span></div>
+</div>
+
+{% if upcoming %}
+<h2>Next up</h2>
+<div class="card">
+  <div class="kv">
+    {% for job in upcoming %}
+      <dt>{{ to_local(job.scheduled_at) }}</dt>
+      <dd>
+        <a href="/jobs/{{ job.id }}">{{ job.title or job.topic }}</a>
+        {% if job.channel %}<i style="color:var(--faint)"> → {{ job.channel.title }}</i>{% endif %}
+      </dd>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<h2>All jobs</h2>
+
+{% if not jobs %}
+  <div class="card empty-state">
+    <div class="big">🎬</div>
+    <p>Nothing here yet.</p>
+    <p><a class="btn" href="/create">Make your first Short</a></p>
+  </div>
+{% else %}
+<div class="joblist">
+  {% for job in jobs %}
+  <div class="job" data-job="{{ job.id }}">
+    {% if job.thumb_path %}
+      <img class="thumb" src="/media/{{ job.id }}/thumb" alt="">
+    {% else %}
+      <div class="thumb empty">{{ '✂' if job.kind == 'clip' else '🎬' }}</div>
+    {% endif %}
+    <div>
+      <div class="title"><a href="/jobs/{{ job.id }}">{{ job.title or job.topic or job.source_url }}</a></div>
+      <div class="meta">
+        <span class="badge {{ job.status }}" data-status>{{ job.status }}</span>
+        <i>·</i> {{ job.kind.replace('_', ' ') }}
+        {% if job.duration %}<i>·</i> {{ '%.0f' % job.duration }}s{% endif %}
+        {% if job.channel %}<i>·</i> {{ job.channel.title }}{% endif %}
+        {% if job.scheduled_at %}<i>·</i> {{ to_local(job.scheduled_at) }}{% endif %}
+        {% if job.youtube_video_id %}
+          <i>·</i> <a href="{{ job.youtube_url }}" target="_blank" rel="noopener">on YouTube ↗</a>
+        {% endif %}
+      </div>
+      <div class="meta" data-message>{{ job.progress_message }}</div>
+      {% if job.status in ('rendering', 'publishing') %}
+        <div class="bar"><i data-bar style="width: {{ job.progress }}%"></i></div>
+      {% endif %}
+      {% if children.get(job.id) %}
+        <div class="meta" style="margin-top:6px">
+          {{ children[job.id]|length }} clips:
+          {% for child in children[job.id] %}
+            <a href="/jobs/{{ child.id }}">#{{ loop.index }}</a>{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+    <div class="actions">
+      {% if job.video_path %}
+        <a class="btn ghost sm" href="/media/{{ job.id }}/video">Download</a>
+      {% endif %}
+      <a class="btn ghost sm" href="/jobs/{{ job.id }}">Open</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Poll instead of websockets: one endpoint, survives a worker restart, and
+// keeps the page honest if the browser was left open overnight.
+async function refresh() {
+  try {
+    const rows = await (await fetch('/api/jobs')).json();
+    let active = false;
+    for (const row of rows) {
+      const el = document.querySelector(`[data-job="${row.id}"]`);
+      if (!el) continue;
+      const badge = el.querySelector('[data-status]');
+      if (badge && badge.textContent.trim() !== row.status) {
+        badge.textContent = row.status;
+        badge.className = 'badge ' + row.status;
+        if (row.status === 'ready' || row.status === 'published') location.reload();
+      }
+      const msg = el.querySelector('[data-message]');
+      if (msg) msg.textContent = row.message || '';
+      const bar = el.querySelector('[data-bar]');
+      if (bar) bar.style.width = (row.progress || 0) + '%';
+      if (row.status === 'rendering' || row.status === 'publishing' || row.status === 'queued') active = true;
+    }
+    setTimeout(refresh, active ? 2500 : 10000);
+  } catch (e) {
+    setTimeout(refresh, 15000);
+  }
+}
+refresh();
+</script>
+{% endblock %}

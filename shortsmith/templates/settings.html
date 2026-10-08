@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Settings · Shortsmith{% endblock %}
+{% block content %}
+
+<h1>Settings</h1>
+<p class="sub">What is wired up right now. Everything here is read from <code>.env</code>
+on the server; this page is the health check.</p>
+
+<div class="grid2">
+  {% for key, info in status.items() %}
+  <div class="card">
+    <h3>{{ key|capitalize }}</h3>
+    <div style="font-size:15px;margin-bottom:4px">
+      <span class="dot {{ 'ok' if info.ok else 'no' }}"></span>{{ info.provider }}
+    </div>
+    <div class="hint" style="margin:0">{{ info.detail }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Display</h2>
+<form method="post" action="/settings" class="card">
+  <div class="field">
+    <label for="tz_name">Timezone for every date on this site</label>
+    <select id="tz_name" name="tz_name">
+      {% for zone in timezones %}
+        <option value="{{ zone }}" {{ 'selected' if zone == tz_name }}>{{ zone }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn" type="submit">Save</button>
+</form>
+
+<h2>Current configuration</h2>
+<div class="card">
+  <div class="kv">
+    <dt>Script writer</dt><dd>{{ settings.llm_provider }}{% if settings.llm_provider == 'ollama' %} · {{ settings.ollama_model }} at {{ settings.ollama_url }}{% endif %}</dd>
+    <dt>Visuals</dt><dd>{{ settings.image_provider }}</dd>
+    <dt>Voice</dt><dd>{{ settings.tts_provider }} · {{ settings.piper_voice }}</dd>
+    <dt>Captions</dt><dd>whisper {{ settings.whisper_model }} on {{ settings.whisper_device }}</dd>
+    <dt>Output</dt><dd>{{ settings.video_width }}x{{ settings.video_height }} at {{ settings.video_fps }}fps</dd>
+    <dt>Worker</dt><dd>{{ 'in this process' if settings.worker_enabled else 'separate process' }}, polling every {{ settings.worker_poll_seconds }}s</dd>
+    <dt>Redirect URI</dt><dd style="font-size:12.5px">{{ settings.redirect_uri }}</dd>
+    <dt>Media</dt><dd style="font-size:12.5px">{{ settings.media_dir }}</dd>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+# secrets and runtime state
+.env
+data/
+*.db
+*.db-wal
+*.db-shm
+*.pid
+*.log
+
+# models are downloaded on first run, not stored in git
+models/piper/*.onnx
+models/piper/*.onnx.json
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# scratch
+probe/

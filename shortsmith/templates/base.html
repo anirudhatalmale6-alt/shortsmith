@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Shortsmith{% endblock %}</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">
+    <span class="brand-mark">▶</span>
+    <span class="brand-name">Shortsmith</span>
+  </a>
+  <nav>
+    <a href="/" class="{{ 'on' if request.url.path == '/' }}">Queue</a>
+    <a href="/create" class="{{ 'on' if request.url.path == '/create' }}">New Short</a>
+    <a href="/clip" class="{{ 'on' if request.url.path == '/clip' }}">From a URL</a>
+    <a href="/channels" class="{{ 'on' if request.url.path == '/channels' }}">Channels</a>
+    <a href="/settings" class="{{ 'on' if request.url.path == '/settings' }}">Settings</a>
+  </nav>
+  <div class="tzchip" title="All times are shown in this timezone">{{ tz_name }}</div>
+</header>
+
+{% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer>
+  <span>Shortsmith &middot; local renders, your channels, your keys</span>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

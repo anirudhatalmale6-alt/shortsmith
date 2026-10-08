@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}New Short · Shortsmith{% endblock %}
+{% block content %}
+
+<h1>New Short</h1>
+<p class="sub">Type a topic. The script, the visuals, the voice, the captions and the
+9:16 cut are all generated, then it goes out at the time you pick.</p>
+
+<form method="post" action="/create">
+<div class="grid2">
+
+  <div>
+    <div class="card">
+      <div class="field">
+        <label for="topic">Topic</label>
+        <input type="text" id="topic" name="topic" required autofocus
+               placeholder="Sad Story" value="">
+        <div class="hint">Anything from two words to a full brief.
+          Try: Sad Story &middot; Sci-Fi Story &middot; Unsolved mystery &middot;
+          Motivational discipline &middot; Wholesome kindness</div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="duration">Target length</label>
+          <select id="duration" name="duration">
+            <option value="30">About 30 seconds</option>
+            <option value="45" selected>About 45 seconds</option>
+            <option value="60">About 60 seconds</option>
+            <option value="75">About 75 seconds</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="tone">Tone</label>
+          <select id="tone" name="tone">
+            {% for tone in tones %}<option value="{{ tone }}">{{ tone|capitalize }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="count">How many</label>
+          <input type="number" id="count" name="count" value="1" min="1" max="30">
+          <div class="hint">Queue a week of Shorts on one topic in one go.</div>
+        </div>
+        <div class="field">
+          <label for="spacing_hours">Hours apart</label>
+          <input type="number" id="spacing_hours" name="spacing_hours" value="24" min="1" max="168">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Publishing</h3>
+      <div class="field">
+        <label for="channel_id">Channel</label>
+        <select id="channel_id" name="channel_id">
+          <option value="">Do not publish, just render</option>
+          {% for channel in channels %}
+            <option value="{{ channel.id }}">{{ channel.title }}{% if channel.handle %} ({{ channel.handle }}){% endif %}</option>
+          {% endfor %}
+        </select>
+        {% if not channels %}
+          <div class="hint">No channels connected yet. <a href="/channels">Connect one</a>
+            and this Short will upload itself.</div>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="publish_mode">When</label>
+        <select id="publish_mode" name="publish_mode">
+          <option value="draft">Render only, I will publish by hand</option>
+          <option value="schedule" selected>Schedule for a date and time</option>
+          <option value="now">Upload as soon as it is rendered</option>
+        </select>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="scheduled_at">First slot</label>
+          <input type="datetime-local" id="scheduled_at" name="scheduled_at" value="{{ default_slot }}">
+        </div>
+        <div class="field">
+          <label for="tz_name">Timezone</label>
+          <select id="tz_name" name="tz_name">
+            {% for zone in timezones %}
+              <option value="{{ zone }}" {{ 'selected' if zone == tz_name }}>{{ zone }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="privacy">Visibility</label>
+        <select id="privacy" name="privacy">
+          <option value="public" selected>Public</option>
+          <option value="unlisted">Unlisted</option>
+          <option value="private">Private</option>
+        </select>
+        <div class="hint">A scheduled upload always goes up private first and YouTube
+          flips it public at the slot. That is how their API works.</div>
+      </div>
+
+      <div class="field inline">
+        <input type="checkbox" id="made_for_kids" name="made_for_kids">
+        <label for="made_for_kids">Made for kids</label>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h3>Voice</h3>
+      <div class="field">
+        <label for="voice">Narrator</label>
+        <select id="voice" name="voice">
+          {% for voice in voices %}
+            <option value="{{ voice.id }}">{{ voice.label }} — {{ voice.engine }}</option>
+          {% endfor %}
+        </select>
+        <div class="hint">Piper voices run offline on this machine and cost nothing per video.</div>
+      </div>
+      <div class="field">
+        <label for="speed">Speed</label>
+        <select id="speed" name="speed">
+          <option value="0.9">Slower (0.9x)</option>
+          <option value="1.0" selected>Normal</option>
+          <option value="1.1">Faster (1.1x)</option>
+          <option value="1.2">Fast (1.2x)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Captions</h3>
+      <div class="field">
+        <label for="caption_style">Style</label>
+        <select id="caption_style" name="caption_style">
+          {% for key, spec in caption_styles.items() %}
+            <option value="{{ key }}" {{ 'selected' if key == 'bold_yellow' }}>{{ spec.label }}</option>
+          {% endfor %}
+        </select>
+        <div class="hint">Timed word by word from the rendered audio, not guessed from the script.</div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="words_per_line">Words per line</label>
+          <input type="number" id="words_per_line" name="words_per_line" value="3" min="1" max="6">
+        </div>
+        <div class="field" style="padding-top:26px">
+          <div class="inline">
+            <input type="checkbox" id="uppercase_captions" name="uppercase_captions" checked>
+            <label for="uppercase_captions">Uppercase</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Look and sound</h3>
+      <div class="field">
+        <label for="image_provider_name">Visuals</label>
+        <select id="image_provider_name" name="image_provider_name">
+          <option value="">Use the configured default ({{ settings.image_provider }})</option>
+          <option value="pollinations">Hosted AI generator (free, no key)</option>
+          <option value="sdwebui">Local Stable Diffusion (A1111 / Forge)</option>
+          <option value="comfyui">Local ComfyUI</option>
+          <option value="pexels">Stock photography (Pexels key)</option>
+          <option value="gradient">Procedural backgrounds (offline)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="music">Music bed</label>
+        <select id="music" name="music">
+          <option value="">No music</option>
+          <option value="auto">Built-in ambient pad</option>
+          {% for track in music_files %}<option value="{{ track }}">{{ track }}</option>{% endfor %}
+        </select>
+        <div class="hint">Drop your own tracks into <code>assets/music</code> and they appear here.
+          Music ducks automatically under the narration.</div>
+      </div>
+      <div class="field inline">
+        <input type="checkbox" id="motion" name="motion" checked>
+        <label for="motion">Ken Burns motion on every still</label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="actions" style="margin-top:20px">
+  <button class="btn" type="submit">Queue it</button>
+  <a class="btn ghost" href="/">Cancel</a>
+</div>
+</form>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title or job.topic }} · Shortsmith{% endblock %}
+{% block content %}
+
+<h1>{{ job.title or job.topic or job.source_url }}</h1>
+<p class="sub">
+  <span class="badge {{ job.status }}" data-status>{{ job.status }}</span>
+  <span style="margin-left:8px">{{ job.kind.replace('_', ' ') }}</span>
+  {% if job.duration %}<span style="margin-left:8px">{{ '%.1f' % job.duration }}s</span>{% endif %}
+  <span style="margin-left:8px">created {{ to_local(job.created_at) }}</span>
+</p>
+
+{% if job.status in ('queued', 'rendering', 'publishing') %}
+<div class="card">
+  <div data-message>{{ job.progress_message or 'Waiting for a worker' }}</div>
+  <div class="bar"><i data-bar style="width: {{ job.progress }}%"></i></div>
+</div>
+{% endif %}
+
+{% if job.error %}
+<div class="card">
+  <h3>Last error</h3>
+  <div class="err">{{ job.error }}</div>
+</div>
+{% endif %}
+
+<div class="player" style="margin-top:16px">
+  <div>
+    {% if job.video_path %}
+      <video controls preload="metadata" playsinline
+             poster="/media/{{ job.id }}/thumb" src="/media/{{ job.id }}/video"></video>
+      <div class="actions" style="margin-top:12px">
+        <a class="btn ghost sm" href="/media/{{ job.id }}/video">Download MP4</a>
+        {% if job.srt_path %}<a class="btn ghost sm" href="/media/{{ job.id }}/srt">SRT</a>{% endif %}
+      </div>
+    {% else %}
+      <div class="card empty-state" style="padding:40px 16px">
+        <div class="big">🎞</div>
+        <div>No file yet</div>
+      </div>
+    {% endif %}
+
+    {% if job.youtube_video_id %}
+      <div class="card" style="margin-top:14px">
+        <h3>On YouTube</h3>
+        <a href="{{ job.youtube_url }}" target="_blank" rel="noopener">{{ job.youtube_url }}</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <form method="post" action="/jobs/{{ job.id }}/update" class="card">
+      <h3>Publishing details</h3>
+      <div class="field">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" maxlength="100" value="{{ job.title }}">
+      </div>
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description">{{ job.description }}</textarea>
+      </div>
+      <div class="field">
+        <label for="tags">Tags</label>
+        <input type="text" id="tags" name="tags" value="{{ job.tags }}">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="channel_id">Channel</label>
+          <select id="channel_id" name="channel_id">
+            <option value="">None</option>
+            {% for channel in channels %}
+              <option value="{{ channel.id }}" {{ 'selected' if channel.id == job.channel_id }}>{{ channel.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="privacy">Visibility</label>
+          <select id="privacy" name="privacy">
+            {% for value in ('public', 'unlisted', 'private') %}
+              <option value="{{ value }}" {{ 'selected' if value == job.privacy }}>{{ value|capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="publish_mode">When</label>
+          <select id="publish_mode" name="publish_mode">
+            <option value="draft" {{ 'selected' if job.publish_mode == 'draft' }}>Hold as a draft</option>
+            <option value="schedule" {{ 'selected' if job.publish_mode == 'schedule' }}>At the time below</option>
+            <option value="now" {{ 'selected' if job.publish_mode == 'now' }}>As soon as it is ready</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="scheduled_at">Slot ({{ tz_name }})</label>
+          <input type="datetime-local" id="scheduled_at" name="scheduled_at"
+                 value="{{ to_input(job.scheduled_at) }}">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">Save</button>
+      </div>
+    </form>
+
+    <div class="card">
+      <h3>Actions</h3>
+      <div class="actions">
+        {% if job.status == 'ready' and job.channel_id %}
+          <form method="post" action="/jobs/{{ job.id }}/publish"><button class="btn sm" type="submit">Upload now</button></form>
+        {% endif %}
+        {% if job.status in ('failed', 'cancelled') %}
+          <form method="post" action="/jobs/{{ job.id }}/retry"><button class="btn sm" type="submit">Retry</button></form>
+        {% endif %}
+        {% if job.kind != 'clip_child' %}
+          <form method="post" action="/jobs/{{ job.id }}/regenerate"><button class="btn ghost sm" type="submit">Rewrite and re-render</button></form>
+        {% endif %}
+        {% if job.status in ('queued', 'rendering') %}
+          <form method="post" action="/jobs/{{ job.id }}/cancel"><button class="btn ghost sm" type="submit">Cancel</button></form>
+        {% endif %}
+        <form method="post" action="/jobs/{{ job.id }}/delete"
+              onsubmit="return confirm('Delete this job and its files?')">
+          <button class="btn danger sm" type="submit">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if script %}
+<h2>Script</h2>
+<div class="card">
+  <div class="script-beat">
+    <p><strong>{{ script.hook }}</strong></p>
+    <div class="prompt">hook</div>
+  </div>
+  {% for scene in script.scenes %}
+  <div class="script-beat">
+    <p>{{ scene.narration }}</p>
+    <div class="prompt">{{ scene.visual_prompt }}</div>
+  </div>
+  {% endfor %}
+  {% if script.cta %}
+  <div class="script-beat"><p>{{ script.cta }}</p><div class="prompt">closing line</div></div>
+  {% endif %}
+  <p class="hint">Written by: {{ script.provider }}{% if script.notes %} — {{ script.notes }}{% endif %}</p>
+</div>
+{% endif %}
+
+{% if children %}
+<h2>Clips from this video</h2>
+<div class="joblist">
+  {% for child in children %}
+  <div class="job" data-job="{{ child.id }}">
+    {% if child.thumb_path %}
+      <img class="thumb" src="/media/{{ child.id }}/thumb" alt="">
+    {% else %}<div class="thumb empty">✂</div>{% endif %}
+    <div>
+      <div class="title"><a href="/jobs/{{ child.id }}">{{ child.title }}</a></div>
+      <div class="meta">
+        <span class="badge {{ child.status }}" data-status>{{ child.status }}</span>
+        {% if child.duration %}<i>·</i> {{ '%.0f' % child.duration }}s{% endif %}
+      </div>
+      <div class="meta" data-message>{{ child.progress_message }}</div>
+    </div>
+    <div class="actions">
+      {% if child.video_path %}<a class="btn ghost sm" href="/media/{{ child.id }}/video">Download</a>{% endif %}
+      <a class="btn ghost sm" href="/jobs/{{ child.id }}">Open</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if events %}
+<h2>Log</h2>
+<div class="card">
+  <div class="kv">
+    {% for event in events %}
+      <dt>{{ to_local(event.created_at) }}</dt><dd>{{ event.message }}</dd>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const JOB_ID = {{ job.id }};
+let lastStatus = {{ job.status|tojson }};
+async function refresh() {
+  try {
+    const rows = await (await fetch('/api/jobs')).json();
+    let active = false;
+    for (const row of rows) {
+      const el = document.querySelector(`[data-job="${row.id}"]`);
+      if (el) {
+        const badge = el.querySelector('[data-status]');
+        if (badge) { badge.textContent = row.status; badge.className = 'badge ' + row.status; }
+        const msg = el.querySelector('[data-message]');
+        if (msg) msg.textContent = row.message || '';
+      }
+      if (row.id === JOB_ID) {
+        const msg = document.querySelector('.card [data-message]');
+        if (msg) msg.textContent = row.message || '';
+        const bar = document.querySelector('[data-bar]');
+        if (bar) bar.style.width = (row.progress || 0) + '%';
+        if (row.status !== lastStatus) { location.reload(); return; }
+      }
+      if (['queued', 'rendering', 'publishing'].includes(row.status)) active = true;
+    }
+    setTimeout(refresh, active ? 2000 : 12000);
+  } catch (e) { setTimeout(refresh, 15000); }
+}
+refresh();
+</script>
+{% endblock %}

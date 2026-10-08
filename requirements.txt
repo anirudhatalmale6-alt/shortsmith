@@ -1,0 +1,24 @@
+APScheduler==3.11.3
+av==19.0.1
+edge-tts==7.2.8
+fastapi==0.142.4
+faster-whisper==1.2.1
+google-api-python-client==2.201.0
+google-auth==2.61.0
+google-auth-oauthlib==1.5.0
+httpx==0.28.1
+huggingface_hub==0.36.2
+itsdangerous==2.2.0
+Jinja2==3.1.6
+numpy==2.5.3
+onnxruntime==1.30.0
+pillow==12.3.0
+piper-tts==1.8.0
+pydantic==2.13.5
+python-multipart==0.0.32
+SQLAlchemy==2.1.4
+uvicorn==0.54.0
+yt-dlp==2026.8.19
+# Note: faster-whisper 1.2.x calls av.open(metadata_errors=...), removed in PyAV 19.
+# Shortsmith decodes audio with ffmpeg instead, so PyAV is never on the hot path,
+# but huggingface_hub must stay below 1.0 for faster-whisper's model loader.

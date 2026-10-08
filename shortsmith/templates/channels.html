@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Channels · Shortsmith{% endblock %}
+{% block content %}
+
+<h1>YouTube channels</h1>
+<p class="sub">Connect as many as you like. Each one keeps its own token, so a Short
+queued against a channel always goes to that channel.</p>
+
+{% if not configured %}
+<div class="card">
+  <h3><span class="dot no"></span>Google OAuth is not configured yet</h3>
+  <p class="hint">This is a one-off, about five minutes. The credentials stay on your
+    server and belong to your own Google account.</p>
+  <ol class="steps">
+    <li>Open <code>console.cloud.google.com</code> and create a project.</li>
+    <li>APIs &amp; Services → Library → enable <code>YouTube Data API v3</code>.</li>
+    <li>APIs &amp; Services → OAuth consent screen. Pick External, fill in the app name
+      and your email, and add yourself under Test users.</li>
+    <li>Add these scopes: <code>youtube.upload</code>, <code>youtube.readonly</code>,
+      <code>youtube.force-ssl</code>.</li>
+    <li>Credentials → Create credentials → OAuth client ID → <strong>Web application</strong>.</li>
+    <li>Under Authorised redirect URIs add exactly:<br><code>{{ redirect_uri }}</code></li>
+    <li>Copy the client ID and secret into your <code>.env</code> as
+      <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code>, then restart.</li>
+  </ol>
+</div>
+{% else %}
+<div class="card">
+  <div class="actions">
+    <a class="btn" href="/youtube/connect">Connect a channel</a>
+    <span class="hint" style="margin:0">Sign in with the Google account that owns the
+      channel. For a Brand Account, pick the brand on the account chooser, not your
+      personal profile.</span>
+  </div>
+</div>
+{% endif %}
+
+{% if channels %}
+<h2>Connected</h2>
+<div class="grid2">
+  {% for channel in channels %}
+  <div class="card">
+    <div class="channel">
+      {% if channel.thumbnail_url %}<img src="{{ channel.thumbnail_url }}" alt="">{% else %}<div style="width:48px;height:48px;border-radius:50%;background:var(--bg-3)"></div>{% endif %}
+      <div>
+        <div class="nm">{{ channel.title }}</div>
+        <div class="sub2">
+          {% if channel.handle %}{{ channel.handle }} · {% endif %}
+          {% if channel.subscriber_count %}{{ channel.subscriber_count }} subscribers{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="kv" style="margin-top:14px">
+      <dt>Status</dt>
+      <dd>{% if channel.is_active %}<span class="dot ok"></span>Connected{% else %}<span class="dot no"></span>Disconnected{% endif %}</dd>
+      <dt>Channel ID</dt><dd style="font-size:12.5px;color:var(--dim)">{{ channel.youtube_channel_id }}</dd>
+      <dt>Connected</dt><dd>{{ to_local(channel.created_at) }}</dd>
+    </div>
+    {% if channel.last_error %}<div class="err" style="margin-top:12px">{{ channel.last_error }}</div>{% endif %}
+    {% if channel.is_active %}
+    <form method="post" action="/channels/{{ channel.id }}/disconnect" style="margin-top:14px"
+          onsubmit="return confirm('Disconnect {{ channel.title }}?')">
+      <button class="btn ghost sm" type="submit">Disconnect</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% elif configured %}
+<div class="card empty-state">
+  <div class="big">📺</div>
+  <p>No channels connected yet.</p>
+</div>
+{% endif %}
+
+<div class="card" style="margin-top:22px">
+  <h3>Two things Google does that look like bugs</h3>
+  <p class="hint" style="margin:0 0 8px">
+    <strong>Everything uploads as private.</strong> Until your Google Cloud project passes
+    YouTube's API audit, every upload made through the API is forced to private and
+    scheduled publish times are ignored. The upload works; the video just never goes
+    public. Request the audit from the YouTube API services page once you are happy
+    with the setup.</p>
+  <p class="hint" style="margin:0">
+    <strong>Six uploads a day.</strong> The default API quota is 10,000 units a day and
+    one upload costs 1,600, so a fresh project gets about six videos a day across all
+    channels. Ask for more quota in the Cloud Console if you need a bigger run rate.</p>
+</div>
+{% endblock %}
