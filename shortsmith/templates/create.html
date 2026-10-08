@@ -116,7 +116,7 @@
         <label for="voice">Narrator</label>
         <select id="voice" name="voice">
           {% for voice in voices %}
-            <option value="{{ voice.id }}">{{ voice.label }} — {{ voice.engine }}</option>
+            <option value="{{ voice.id }}">{{ voice.label }} &middot; {{ voice.engine }}</option>
           {% endfor %}
         </select>
         <div class="hint">Piper voices run offline on this machine and cost nothing per video.</div>
