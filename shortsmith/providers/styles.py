@@ -103,9 +103,13 @@ def style_negative(style: str) -> str:
     return f"{BASE_NEGATIVE}, {extra}"
 
 
+# Generators take an int32 seed; anything larger is refused, not wrapped.
+MAX_SEED = 2 ** 31 - 1
+
+
 def seed_base(key: str) -> int:
     """One stable base seed per video, derived from its title."""
-    return int(hashlib.sha256(key.encode()).hexdigest()[:8], 16)
+    return int(hashlib.sha256(key.encode()).hexdigest()[:8], 16) % MAX_SEED
 
 
 def character_sheet(prompts: list[str]) -> str:

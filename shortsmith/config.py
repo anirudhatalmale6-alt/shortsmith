@@ -75,7 +75,7 @@ class Settings:
 
     # --- visuals ---------------------------------------------------------
     # pollinations | sdwebui | comfyui | pexels | gradient
-    image_provider: str = _env("IMAGE_PROVIDER", "pollinations")
+    image_provider: str = _env("IMAGE_PROVIDER", "hfspace")
     sdwebui_url: str = _env("SDWEBUI_URL", "http://127.0.0.1:7860").rstrip("/")
     sdwebui_model: str = _env("SDWEBUI_MODEL", "")
     comfyui_url: str = _env("COMFYUI_URL", "http://127.0.0.1:8188").rstrip("/")

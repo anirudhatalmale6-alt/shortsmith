@@ -38,7 +38,7 @@ URL   ──▶ download ──▶ transcript ──▶ segment scoring ──�
 | Stage | Default | Alternatives |
 |---|---|---|
 | Script | **Ollama** (local LLM, free, offline) | any OpenAI-compatible endpoint; built-in offline writer |
-| Visuals | **Pollinations** (hosted SD, no key) | local **AUTOMATIC1111 / Forge**, local **ComfyUI**, **Pexels** stock, procedural plates |
+| Visuals | **FLUX.1-schnell** on a public Hugging Face Space (open weights, free token) | local **AUTOMATIC1111 / Forge**, local **ComfyUI**, Pollinations, **Pexels** stock, procedural plates |
 | Voice | **Piper TTS** (MIT, offline, CPU) | **edge-tts** neural voices |
 | Captions | **faster-whisper** (MIT, CPU) word timings | estimated timing if Whisper is unavailable |
 | Video | **ffmpeg** |: |
@@ -92,6 +92,16 @@ ollama pull llama3.2:3b          # about 2 GB, runs on CPU
 Shortsmith finds it on `http://127.0.0.1:11434` automatically. Without it the
 built-in offline writer takes over, so nothing breaks: the scripts are just less
 varied.
+
+### Visuals: pick one
+
+The default is FLUX.1-schnell running on a public Hugging Face Space. Open
+weights, free, and the best quality available without a GPU of your own. It does
+need a free Hugging Face token, because anonymous callers get almost no GPU time:
+
+1. Sign up at <https://huggingface.co/join>, no card needed.
+2. <https://huggingface.co/settings/tokens>, create a token with read scope.
+3. Put it in `.env` as `HF_TOKEN=hf_...`.
 
 ### Optional: local image generation
 

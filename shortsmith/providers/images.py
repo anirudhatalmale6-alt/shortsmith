@@ -2,8 +2,11 @@
 
 Five interchangeable back-ends, picked with IMAGE_PROVIDER:
 
-  pollinations - free hosted Stable Diffusion, no key, no account.  Good for
-                 getting started and for servers with no GPU.
+  hfspace      - a public Hugging Face Space (FLUX.1-schnell by default).
+                 Free, no key, open weights, and the best quality available
+                 without a GPU of your own.  This is the default.
+  pollinations - another free hosted generator, no key.  A second opinion when
+                 the Space's shared GPU quota is spent.
   sdwebui      - a local AUTOMATIC1111 / Forge instance.  Fully offline, your
                  own checkpoints and LoRAs, no rate limit.
   comfyui      - a local ComfyUI instance running a simple txt2img graph.
@@ -171,6 +174,14 @@ def _pollinations(prompt: str, out_path: Path, index: int) -> Path:
             log.warning("pollinations attempt %s failed: %s", attempt + 1, exc)
             time.sleep(30 + 20 * attempt)
     raise RuntimeError(f"pollinations failed: {last_exc}")
+
+
+def _hfspace(prompt: str, out_path: Path, index: int) -> Path:
+    from . import hfspace
+
+    img = hfspace.generate(prompt, seed=_seed_for(prompt, index))
+    _fit_vertical(img).save(out_path, "PNG")
+    return out_path
 
 
 def _sdwebui(prompt: str, out_path: Path, index: int) -> Path:
@@ -350,6 +361,7 @@ def _flat_gradient(prompt: str, out_path: Path, index: int) -> Path:
 
 
 PROVIDERS = {
+    "hfspace": _hfspace,
     "pollinations": _pollinations,
     "sdwebui": _sdwebui,
     "comfyui": _comfyui,
@@ -363,11 +375,20 @@ def generate_image(prompt: str, out_path: Path, index: int = 0, provider: str | 
     name = (provider or settings.image_provider or "pollinations").lower()
     fn = PROVIDERS.get(name)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    if fn is not None and name != "gradient":
+    # Try the chosen provider, then the other key-free hosted one, then fall
+    # back to a plate.  Both free generators share the failure mode of a spent
+    # quota, and they do not run out at the same time, so one covers the other.
+    chain = [name]
+    if name in {"hfspace", "pollinations"}:
+        chain.append("pollinations" if name == "hfspace" else "hfspace")
+    for candidate in chain:
+        fn = PROVIDERS.get(candidate)
+        if fn is None or candidate == "gradient":
+            continue
         try:
-            return fn(prompt, out_path, index), name
+            return fn(prompt, out_path, index), candidate
         except Exception as exc:  # noqa: BLE001 - one scene must not kill the render
-            log.warning("image provider %s failed for scene %s: %s", name, index, exc)
+            log.warning("image provider %s failed for scene %s: %s", candidate, index, exc)
     try:
         return _gradient(prompt, out_path, index), "plate"
     except Exception as exc:  # noqa: BLE001
@@ -378,6 +399,10 @@ def generate_image(prompt: str, out_path: Path, index: int = 0, provider: str | 
 def provider_status() -> dict[str, object]:
     name = (settings.image_provider or "pollinations").lower()
     try:
+        if name == "hfspace":
+            from . import hfspace
+
+            return hfspace.status()
         if name == "pollinations":
             status, _ = _http_get_bytes("https://image.pollinations.ai/prompt/test?width=64&height=64", timeout=30)
             return {"ok": status < 400, "provider": name, "detail": f"HTTP {status}"}
