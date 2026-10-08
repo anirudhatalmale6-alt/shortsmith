@@ -181,3 +181,44 @@ def test_reframe_filters_target_the_configured_resolution() -> None:
     assert "1080:1920" in C._reframe_filter("crop") or "1080" in C._reframe_filter("crop")
     blur = C._reframe_filter("blur")
     assert "gblur" in blur and "overlay" in blur
+
+
+# ---------------------------------------------------------------------------
+# titles
+# ---------------------------------------------------------------------------
+
+def test_a_title_comes_from_the_clips_own_opening_line() -> None:
+    title = C.heuristic_title("Here's why nobody tells you this. It changed everything.")
+    assert title.startswith("Here's why nobody tells you this")
+
+
+def test_a_title_drops_leading_filler() -> None:
+    assert not C.heuristic_title("So, here's the thing about compound interest.").startswith("So")
+
+
+def test_a_title_strips_verbal_tics() -> None:
+    title = C.heuristic_title("This is, um, the part that actually matters a lot.")
+    assert "um" not in title.lower().split()
+
+
+def test_a_long_title_is_cut_on_a_word_boundary() -> None:
+    long_line = "This is the single most important thing that anybody ever told me about money and it changed everything."
+    title = C.heuristic_title(long_line, limit=40)
+    assert len(title) <= 40
+    assert not title.endswith(" ")
+    assert long_line.startswith(title[:10])
+
+
+def test_a_title_never_ends_on_a_dangling_preposition() -> None:
+    title = C.heuristic_title(
+        "The thing that nobody tells you about the real cost of a mortgage is this.", limit=46)
+    assert title.split()[-1].lower() not in {"of", "the", "a", "to", "and", "about"}
+
+
+def test_too_short_to_be_a_title_returns_nothing() -> None:
+    assert C.heuristic_title("Yeah.") == ""
+    assert C.heuristic_title("") == ""
+
+
+def test_a_title_is_capitalised() -> None:
+    assert C.heuristic_title("here is why that matters so much").startswith("H")

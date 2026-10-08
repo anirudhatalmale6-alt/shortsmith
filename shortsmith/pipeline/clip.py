@@ -310,6 +310,39 @@ Candidates:
 {body}"""
 
 
+_TITLE_TRIM = re.compile(
+    r"^(?:so|and|but|okay|right|well|now|you know|i mean|like)[,\s]+", re.I)
+_FILLER = re.compile(r"\b(um|uh|er|like|you know|i mean|sort of|kind of)\b[,\s]*", re.I)
+
+
+def heuristic_title(text: str, limit: int = 70) -> str:
+    """A title taken from the clip's own opening line.
+
+    Falls back on "<source> (clip 2)" only when there is nothing usable. A
+    generic numbered title is the fastest way to make an auto-cut Short look
+    auto-cut, and this costs nothing: the hook sentence is already the most
+    title-shaped thing in the window.
+    """
+    first = re.split(r"(?<=[.!?])\s+", " ".join(text.split()), maxsplit=1)[0]
+    first = _FILLER.sub("", _TITLE_TRIM.sub("", first)).strip(" ,.-")
+    first = re.sub(r"\s{2,}", " ", first)
+    if len(first) < 12:
+        return ""
+    if len(first) > limit:
+        # Cut on a word boundary rather than mid-word, then drop a dangling
+        # preposition so the title does not end on "of" or "to".
+        cut = first[:limit].rsplit(" ", 1)[0]
+        words = cut.split()
+        while words and words[-1].lower().strip(",") in {
+            "the", "a", "an", "of", "to", "and", "but", "in", "on", "for", "with", "that",
+            "about", "from", "into", "over", "under", "after", "before", "between",
+            "without", "than", "as", "at", "by", "is", "was", "it", "its", "their",
+        }:
+            words.pop()
+        first = " ".join(words)
+    return first[:1].upper() + first[1:]
+
+
 def rerank_with_model(candidates: list[Candidate]) -> list[Candidate]:
     """Optional second opinion.  Failure here is not an error: keep the heuristic order."""
     if not candidates or settings.llm_provider not in {"ollama", "openai"}:

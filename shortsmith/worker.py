@@ -238,7 +238,9 @@ def run_clip_job(job_id: int) -> None:
                 source_url=url,
                 options_json=job_options_json(opts),
                 status=STATUS_RENDERING,
-                title=(candidate.title or f"{source_title} ({index})")[:95],
+                title=(candidate.title
+                       or clipper.heuristic_title(candidate.text)
+                       or f"{source_title} ({index})")[:95],
                 description=(" ".join(candidate.text.split())[:400] + f"\n\nSource: {url}"),
                 tags="shorts",
                 privacy=opts.get("privacy", "public"),
